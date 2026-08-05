@@ -10,29 +10,11 @@ collectible = {
     occupied = {},
     max = 30
 }
-function collectible.new(self, data_or_name, texture, color, size, chance, inv_slot, value, mults)
-    local c = data_or_name
-    if type(c) == "string" then
-        c = {
-            name = c,
-            chance = chance, 
-            inv_slot = inv_slot,
-            value = value,
-            mults = mults,
-            texture = texture,
-            size = size,
-            color = color
-        }
-    end
-    c.color = colors[c.color]
-    
-    self.types.name[c.name] = c
-    self.types.index[#self.types.index + 1] = c
-end
-function collectible.spawn(self, dt)
-    if math.random(1, 100 * rng_offset) > (self.spawn_rate * rng_offset * 60 * dt) or #self.spawned >= self.max then return end
+
+function collectible.spawn(self, dt, player)
+    if math.random(1, 100 * const.rng_offset) > (self.spawn_rate * const.rng_offset * 60 * dt) or #self.spawned >= self.max then return end
     local type = nil
-    local x, y = math.random(1, grid.w), math.random(1, grid.h)
+    local x, y = math.random(1, screen.grid.w), math.random(1, screen.grid.h)
     if self.occupied[x] and self.occupied[x][y] then return end
     
     local mult = {
@@ -40,18 +22,19 @@ function collectible.spawn(self, dt)
         lr = 1,
         d = 1
     }
-    if x == 1 or x == grid.w then mult.tb = 10 end
-    if y == 1 or y == grid.h then mult.lr = 10 end
-    mult.d = 10^(( 100 * math.sqrt( math.abs(player.x - x)^2 + math.abs(player.y - y)^2 ) / grid.s - spawn_boost) / 10)
+    if x == 1 or x == screen.grid.w then mult.tb = 10 end
+    if y == 1 or y == screen.grid.h then mult.lr = 10 end
+    mult.d = 10^(( 100 * math.sqrt( math.abs(player.x - x)^2 + math.abs(player.y - y)^2 ) / screen.grid.s - const.spawn_boost) / 10)
     -- add the collectibles
     local mul = 1
     for i = 1, self.rolls do
         local no = math.random(1, #self.types.index)
         local coll = self.types.index[no]
+        mul = 1
         for m = 1, #(coll.mults) do
             mul = mul * mult[coll.mults[m]]
         end
-        if math.random(1, 100 * rng_offset) <= coll.chance * rng_offset * mul then
+        if math.random(1, 100 * const.rng_offset) <= coll.chance * const.rng_offset * mul then
             self.spawned[#self.spawned + 1] = {
                 name = coll.name,
                 x = x * cell_size,
@@ -65,7 +48,7 @@ function collectible.spawn(self, dt)
     --return tostring(mult.d), ""
 end
 
-function collectible.collect(self)
+function collectible.collect(self, player)
     for i = #self.spawned, 1, -1 do
         c = self.spawned[i]
         cdata = self.types.name[c.name]
@@ -78,3 +61,4 @@ function collectible.collect(self)
         end
     end
 end
+

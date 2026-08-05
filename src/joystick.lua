@@ -1,12 +1,14 @@
 
 -- ==================== Joystick =========================
 joystick = {}
-joystick.base_x = love.graphics.getWidth() * 140 / 841
-joystick.base_y = love.graphics.getHeight() * (387 - 140) / 387   -- will be set after window created
-joystick.radius = 67
-joystick.dead_zone = player.minspeed / player.speed 
-joystick.knob_x = joystick.base_x
-joystick.knob_y = joystick.base_y
+function joystick.init(player)
+    joystick.base_x = love.graphics.getWidth() * 140 / 841
+    joystick.base_y = love.graphics.getHeight() * (387 - 140) / 387   -- will be set after window created
+    joystick.knob_x = joystick.base_x
+    joystick.knob_y = joystick.base_y
+    joystick.radius = 67
+    joystick.dead_zone = player.minspeed / player.speed
+end
 joystick.x = 0
 joystick.y = 0
 joystick.touch_id = nil
@@ -37,7 +39,7 @@ end
 -- ==================== Keyboard simulation ==============
 -- Map arrow keys / WASD to joystick x,y values
 
-function keyboard_input()
+function joystick.key_in()
     local x = 0
     local y = 0
     if love.keyboard.isDown("left")  or love.keyboard.isDown("a") then x = x - 1 end
@@ -52,3 +54,4 @@ function keyboard_input()
     joystick.x = x
     joystick.y = y
 end
+
