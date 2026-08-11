@@ -1,6 +1,6 @@
 -- ==================== Collectibles and items system ======================
-collectible = {
-    spawn_rate = 0.676767,
+local collectible = {
+    spawn_rate = 67.6767,
     rolls = 2,
     types = {
         name = {},
@@ -31,14 +31,17 @@ function collectible.spawn(self, dt, player)
         local no = math.random(1, #self.types.index)
         local coll = self.types.index[no]
         mul = 1
+        
+        assert(coll.mults, "multiplier is nil? :"..coll.name)
+        
         for m = 1, #(coll.mults) do
             mul = mul * mult[coll.mults[m]]
         end
         if math.random(1, 100 * const.rng_offset) <= coll.chance * const.rng_offset * mul then
             self.spawned[#self.spawned + 1] = {
                 name = coll.name,
-                x = x * cell_size,
-                y = y * cell_size
+                x = x * const.cell_size,
+                y = y * const.cell_size
             }
             self.occupied[x] = self.occupied[x] or {}
             self.occupied[x][y] = true
@@ -61,4 +64,8 @@ function collectible.collect(self, player)
         end
     end
 end
+
+return collectible
+
+
 

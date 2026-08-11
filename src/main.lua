@@ -1,28 +1,18 @@
 require("utility")
-screen, const, colors = require("settings")
-require("player")
-require("collectible")
-require("entity")
-require("joystick")
-require("buttons")
-require("menu")
+settings = require("settings")
+screen = settings.screen
+const = settings.const
+colors = settings.colors
 
-local game = {
-    default = {},
-    screen = screen,
-    const = const,
-    colors = colors,
-    collectible = collectible,
-    button = button,
-    menu = menu,
-    player = player
-}
+local player = require("player")
+local collectible = require("collectible")
+local entity = require("entity")
+local joystick = require("joystick")
+local button = require("button")
+local menu = require("menu")
 
-local api = require("api")(game)
-
---local data = require("data")
-
-local mod = require("mod")
+local api = require("api")
+local mods = require("mods")
 
 
 -- ==================== Scoring & Save ===================
@@ -37,10 +27,35 @@ function love.load()
     math.randomseed(os.time())
     -- Adjust joystick base position after window resize
     
-    init()
+    screen.init()
+    
+    assert(const, "const is nil!")
+    player.init()
     joystick.init(player)
     
-    mod.load(api)
+    local game = {
+        default = {},
+        screen = screen,
+        const = const,
+        colors = colors,
+        collectible = collectible,
+        button = button,
+        menu = menu,
+        player = player
+    }
+    
+    api = api(game)
+    
+    mods.load(api)
+    --mods.load(api)
+
+--[[error(
+    "AFTER MOD LOAD\n" ..
+    "menu.list.game = " .. tostring(menu.list.game) ..
+    "\ngame buttons = " .. tostring(
+        menu.list.game and menu.list.game.buttons
+    )
+)]]
     --data.init(player, collectible, entity, joystick, button, menu)
     
     -- Try to load save, else fresh start
@@ -66,13 +81,14 @@ function love.update(dt)
     collectible:collect(player)
     fps = 1 / dt
     
-    for name, untouch in pairs(button.untouch) do
+    assert(menu.current.buttons, table.concat(menu.current, "\n"))
+    --for name, untouch in pairs(button.untouch) do
+    for name, bool in pairs(menu.current.buttons) do
         local butt = button.list[name]
-        if untouch and butt.act_i then
-            butt:act_i()
+        if button.untouch[name] and butt.act_i then
+            butt.act_i(butt.attributes)
         end
     end
-    
 end
 
 function love.draw()
@@ -117,21 +133,24 @@ function love.draw()
     
     -- Buttons
     for name in pairs(menu.current.buttons) do
+        assert(name, "nope its not it")
         local butt = button.list[name]
+        --error(butt, butt.id, butt.x, butt.y, butt.width, butt.height)
+        --assert(butt, "butt it is. "..name)
         love.graphics.setColor(colors.buttback)
-        love.graphics.rectangle("fill", butt.sx, butt.sy, butt.width, butt.height)
+        love.graphics.rectangle("fill", butt.x, butt.y, butt.width, butt.height)
         
         love.graphics.setColor(colors.button)
-        love.graphics.rectangle("fill", butt.sx + 5, butt.sy + 5, butt.width - 10, butt.height - 10)
+        love.graphics.rectangle("fill", butt.x + 5, butt.y + 5, butt.width - 10, butt.height - 10)
         
         love.graphics.setColor(1, 1, 1, 0.7)
-        love.graphics.printf(butt.txt, butt.sx, (butt.sy + butt.ey)/2 - font_size, butt.width, "center")
+        love.graphics.printf(butt.txt, butt.x, butt.y + (butt.height - font_size)/2, butt.width, "center")
     end
-    
+    --love.graphics.print("f3: " .. tostring(f3) .. "\nhud: " .. tostring(menu.current.hud), 10, 10)
     -- Draw HUD (score, etc.)
-    if f3 and menu.current.hud then
+    if const.f3 and menu.current.hud then
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.print(string.format("X, Y: %d, %d \nFPS: %d \nCoins: %d", math.floor(player.x/20 + 0.5), math.floor(player.y/20 + 0.5), fps, #collectible.spawned), 10, line * font_size + 10)
+        love.graphics.print(string.format("XY: %d, %d \nFPS: %d \nCoins: %d", math.floor(player.x/20 + 0.5), math.floor(player.y/20 + 0.5), fps, #collectible.spawned), 10, line * font_size + 10)
         line = line + 4
         
         for _, name in ipairs(player.inv_order) do
@@ -172,8 +191,7 @@ function love.touchreleased(id)
         joystick.touch_id = nil
         joystick.x, joystick.y = 0, 0
         joystick.knob_x, joystick.knob_y = joystick.base_x, joystick.base_y
-    end
-    if button.touch[id] then
+    elseif button.touch[id] then
         button.untouch[button.touch[id]] = true
         button.touch[id] = nil
     end

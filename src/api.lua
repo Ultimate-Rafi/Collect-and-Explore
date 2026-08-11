@@ -8,16 +8,16 @@ return function(game)
     
     -- Config objects
     api.new.color = function(r, g, b, a)
-        game.colors[#colors + 1] = {r/255, g/255, b/255, a/100}
+        game.colors[#colors + 1] = {(r or 0) /255, (g or 0) /255, (b or 0) /255, (a or 100) /100}
     end
     
     -- Game objects
     api.new.collectible = function(data_or_name, texture, color, size, chance, inv_slot, value, mults)
-        local c = data_or_name
+        --[[local c = data_or_name
         local d = game.default.collectible
         if type(c) == "string" then
             c = {
-                name = c or d.name or "undefined,
+                name = c or d.name or "undefined",
                 chance = chance or d.chance or 0,
                 inv_slot = inv_slot or d.inv_slot or "undefined",
                 value = value or d.value or 0,
@@ -26,7 +26,28 @@ return function(game)
                 size = size or d.size or 0,
                 color = color or d.color or "undefined"
             }
+        end]]
+        
+        local c = type(data_or_name) == "table"
+            and data_or_name
+            or {name = data_or_name}
+        
+        local d = game.default.collectible
+        
+        for k, v in pairs(d) do
+            if c[k] == nil then
+                c[k] = v
+            end
         end
+        
+        c.name = c.name or "undefined"
+        c.chance = c.chance or 0
+        c.inv_slot = c.inv_slot or "undefined"
+        c.value = c.value or 0
+        c.mults = c.mults or {}
+        c.size = c.size or 0
+        c.color = c.color or colors.undefined
+        
         if type(c.color) == "string" then
             c.color = colors[c.color]
         end
@@ -36,15 +57,15 @@ return function(game)
     end
     
     -- UI objects
-    api.new.button = function(id_data, sx, sy, ex, ey, txt, idle, tap, hold, act_i, act_t, act_h)
+    api.new.button = function(id_or_data, x, y, width, height, txt, idle, tap, hold, act_i, act_t, act_h)
         local b = id_or_data
         if type(b) == "string" then
             b = {
-                id = id,
-                sx = sx,
-                sy = sy,
-                ex = ex,
-                ey = ey,
+                id = id_or_data,
+                x = x,
+                y = y,
+                width = width,
+                height = height,
                 txt = txt, -- button text
                 idle = idle, -- texture-idle
                 tap = tap, -- texture-tap
@@ -52,14 +73,15 @@ return function(game)
                 act_i = act_i, -- add params for 3 acts, fix and cooldowns
                 act_h = act_h,
                 act_t = act_t,
-                width = ex - sx,
-                height = ey - sy,
                 attributes = {}
             }
         end
-        game.button.list[id or (#game.button.list + 1)] = b
+        b.id = b.id or b.name
+        b.name = b.name or b.id
+        game.button.list[b.id or (#game.button.list + 1)] = b
     end
-    api.new.menu = function(name, items, button_list, etc)
+    
+    api.new.menu = function(name, items, button_list)
     --[[
     world,
     player,
@@ -67,12 +89,15 @@ return function(game)
     hud
     ]]
         game.menu.list[name] = {
-            table.unpack(items),
             buttons = {}
         }
+        for _, item in ipairs(items) do
+            game.menu.list[name][item] = true
+        end
         for _, bnm in ipairs(button_list) do
             game.menu.list[name].buttons[bnm] = true
         end
+        
     end
     
     -- Getting readable value
@@ -82,18 +107,23 @@ return function(game)
         return game.const.cell_size
     end
     
+    api.get.f3 = function()
+        return game.const.f3
+    end
     -- screen
+    api.get.screen = {}
     api.get.screen.width = function()
-        return game.screen.x
+        return game.screen.pa.w
     end
     api.get.screen.height = function()
-        return game.screen.y
+        return game.screen.pa.h
     end
     api.get.screen.size = function()
-        return game.screen.x, game.screen.y
+        return game.screen.pa.w, game.screen.pa.h
     end
     
     --player
+    api.get.player = {}
     api.get.player.x = function()
         return game.player.x
     end
@@ -118,10 +148,34 @@ return function(game)
     api.set.default = function(type, data)
         game.default[type] = data
     end
+    
+    api.set.f3 = function(bool)
+        game.const.f3 = bool
+    end
+    
+    api.set.inv_order = function(list)
+        game.player.inv_order = list
+    end
+    
+    api.set.coll = {}
+    api.set.coll.spawn_rate = function(num)
+        game.collectible.spawn_rate = num or 0
+    end
+    api.set.coll.rolls = function(num)
+        game.collectible.rolls = num or 1
+    end
+    api.set.coll.max = function(num)
+        game.collectible.max = num or 30
+    end
     -- Special APIs
     
     api.rgb = function(r, g, b, a)
-        return {(r / 255) or 0, (g / 255) or 0, (b / 255) or 0, (a / 100) or 0}
+        return {
+            (r or 0) / 255,
+            (g or 0) / 255,
+            (b or 0) / 255,
+            (a or 100) / 100
+        }
     end
     
     

@@ -1,9 +1,9 @@
 
 -- ==================== Joystick =========================
-joystick = {}
+local joystick = {}
 function joystick.init(player)
-    joystick.base_x = love.graphics.getWidth() * 140 / 841
-    joystick.base_y = love.graphics.getHeight() * (387 - 140) / 387   -- will be set after window created
+    joystick.base_x = screen.pa.w * 140 / 841
+    joystick.base_y = screen.pa.h * (387 - 140) / 387   -- will be set after window created
     joystick.knob_x = joystick.base_x
     joystick.knob_y = joystick.base_y
     joystick.radius = 67
@@ -55,3 +55,4 @@ function joystick.key_in()
     joystick.y = y
 end
 
+return joystick
