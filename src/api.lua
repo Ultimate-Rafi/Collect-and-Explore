@@ -81,6 +81,44 @@ return function(game)
         game.button.list[b.id or (#game.button.list + 1)] = b
     end
     
+    -- Inventory
+    api.new.inventory = function(name, id, slotx, sloty, size)
+        local inv = {
+            name = name,
+            id = id,
+            slot = {
+                x = slotx,
+                y = sloty,
+                size = size
+            },
+            slots = {}
+        }
+        
+        inv.x = api.get.screen.width() / 2
+        inv.y = api.get.screen.height() / 2
+        
+        inv.width = size * (slotx + 2)
+        inv.height = size * (sloty + 2)
+        
+        inv.lcx = inv.x - inv.width / 2
+        inv.lcy = inv.y - inv.height / 2
+        
+        for y = 1, sloty do
+            inv.slots[y] = {}
+            for x = 1, slotx do
+                inv.slots[y][x] = {
+                    item = "",
+                    amount = 0,
+                    max = 0 -- maximum stack size
+                }
+            end
+        end
+        
+        
+        game.inventory.list[id] = inv
+    end
+    
+    -- Menu
     api.new.menu = function(name, items, button_list)
     --[[
     world,
@@ -100,8 +138,12 @@ return function(game)
         
     end
     
+    
+    
+    
     -- Getting readable value
     api.get = {}
+    
     -- const
     api.get.cell_size = function()
         return game.const.cell_size
@@ -110,14 +152,21 @@ return function(game)
     api.get.f3 = function()
         return game.const.f3
     end
+    
+    api.get.inv = function()
+        return game.const.inv
+    end
+    
     -- screen
     api.get.screen = {}
     api.get.screen.width = function()
         return game.screen.pa.w
     end
+    
     api.get.screen.height = function()
         return game.screen.pa.h
     end
+    
     api.get.screen.size = function()
         return game.screen.pa.w, game.screen.pa.h
     end
@@ -127,9 +176,11 @@ return function(game)
     api.get.player.x = function()
         return game.player.x
     end
+    
     api.get.player.y = function()
         return game.player.y
     end
+    
     api.get.player.coords = function()
         return game.player.x, game.player.y
     end
@@ -138,6 +189,9 @@ return function(game)
     api.get.item_count = function(name)
         return game.player.inventory[name]
     end
+    
+    
+    
     
     -- Updating an object
     api.set = {}
@@ -151,6 +205,10 @@ return function(game)
     
     api.set.f3 = function(bool)
         game.const.f3 = bool
+    end
+    
+    api.set.inv = function(bool)
+        game.const.inv = bool
     end
     
     api.set.inv_order = function(list)
@@ -167,8 +225,11 @@ return function(game)
     api.set.coll.max = function(num)
         game.collectible.max = num or 30
     end
-    -- Special APIs
     
+    
+    
+    
+    -- Special APIs
     api.rgb = function(r, g, b, a)
         return {
             (r or 0) / 255,
@@ -178,6 +239,17 @@ return function(game)
         }
     end
     
+    api.inv = {}
+    api.inv.open = function(id)
+        game.inventory.opened = game.inventory.list[id] or {}
+        game.inventory.is_opened = true
+    end
+    
+    api.inv.close = function()
+        game.inventory.opened = {}
+        game.inventory.is_opened = false
+    end
     
     return api
 end
+

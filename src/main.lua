@@ -9,6 +9,7 @@ local collectible = require("collectible")
 local entity = require("entity")
 local joystick = require("joystick")
 local button = require("button")
+local inventory = require("inventory")
 local menu = require("menu")
 
 local api = require("api")
@@ -23,6 +24,7 @@ local mods = require("mods")
 -- ==================== LÖVE callbacks ====================
 function love.load()
     fps = 0
+    fpst = {}
     love.math.setRandomSeed(os.time())
     math.randomseed(os.time())
     -- Adjust joystick base position after window resize
@@ -41,7 +43,8 @@ function love.load()
         collectible = collectible,
         button = button,
         menu = menu,
-        player = player
+        player = player,
+        inventory = inventory
     }
     
     api = api(game)
@@ -63,26 +66,42 @@ function love.load()
 end
 
 function love.update(dt)
-    -- Keyboard input (if no touch active)
-    if joystick.touch_id == nil then
-        joystick.key_in()
-    end
-
-    -- Move player with speed and joystick
-    player.x = player.x + player.speed * joystick.x * dt
-    player.y = player.y + player.speed * joystick.y * dt
-
-    -- Clamp to play area (keep inside green, touching border allowed)
-    player.x = math.max(player.rad, math.min(screen.pa.w - player.rad, player.x))
-    player.y = math.max(player.rad, math.min(screen.pa.h - player.rad, player.y))
-
-    -- Spawn coins
-    collectible:spawn(dt, player)
-    collectible:collect(player)
-    fps = 1 / dt
     
-    assert(menu.current.buttons, table.concat(menu.current, "\n"))
+    if menu.current.joystick then
+        -- Keyboard input (if no touch active)
+        if joystick.touch_id == nil then
+            joystick.key_in()
+        end
+        -- Move player with speed and joystick
+        player.x = player.x + player.speed * joystick.x * dt
+        player.y = player.y + player.speed * joystick.y * dt
+        
+        -- Clamp to play area (keep inside green, touching border allowed)
+        player.x = math.max(player.rad, math.min(screen.pa.w - player.rad, player.x))
+        player.y = math.max(player.rad, math.min(screen.pa.h - player.rad, player.y))
+    end
+    
+    if menu.current.collectible then
+        -- Spawn coins
+        collectible:spawn(dt, player)
+        collectible:collect(player)
+    end
+    
+    
+    fpst[#fpst + 1] = 1/ dt
+    
+    if #fpst > 30 then table.remove(fpst, 1) end
+    
+    fps = 0
+    for _, t in ipairs(fpst) do
+        fps = fps + t
+    end
+    
+    fps = fps / #fpst
+    
+    --assert(menu.current.buttons, table.concat(menu.current, "\n"))
     --for name, untouch in pairs(button.untouch) do
+    
     for name, bool in pairs(menu.current.buttons) do
         local butt = button.list[name]
         if button.untouch[name] and butt.act_i then
@@ -135,8 +154,10 @@ function love.draw()
     for name in pairs(menu.current.buttons) do
         assert(name, "nope its not it")
         local butt = button.list[name]
+        
         --error(butt, butt.id, butt.x, butt.y, butt.width, butt.height)
         --assert(butt, "butt it is. "..name)
+        
         love.graphics.setColor(colors.buttback)
         love.graphics.rectangle("fill", butt.x, butt.y, butt.width, butt.height)
         
@@ -159,10 +180,53 @@ function love.draw()
                 love.graphics.print(name..": "..count, 10, 10 + line * font_size)
                 line = line + 1
             end
+        end
+    end
+    
+   -- assert(not inventory.is_opened, "opened")
+    
+    if inventory.is_opened then
+        --[[love.graphics.setColor(rgb(25, 25, 25))
+        love.graphics.rectangle("fill", screen.pa.w * 0.15 + 3, screen.pa.h * 0.15 + 2, screen.pa.w * 0.7, screen.pa.h * 0.7)
+        
+        love.graphics.setColor(rgb(55, 55, 55))
+        love.graphics.rectangle("fill", screen.pa.w * 0.17, screen.pa.h * 0.2, screen.pa.w * 0.66, screen.pa.h * 0.6)
+        
+        
+        love.graphics.setColor(rgb(105, 105, 105))
+        love.graphics.rectangle("fill", screen.pa.w * 0.185, screen.pa.h * 0.23, screen.pa.w * 0.63, screen.pa.h * 0.54)
+        
+        local size = 50
+        for i = screen.pa.h * 0.25, screen.pa.h * 0.75 - size, 1.1 * size do
+            for j = screen.pa.w * 0.2, screen.pa.w * 0.8 - size, 1.1 * size do
+                love.graphics.setColor(rgb(35, 35, 35))
+                love.graphics.rectangle("fill", j, i, size, size)
+            end
+        end]]
+        local inv = inventory.opened
+        local pad1 = 0.1
+        
+        
+        local pad2 = (1 - 2 * pad1) * inv.slot.size
+        pad1 = inv.slot.size * pad1
+        
+        for y = inv.lcy + inv.slot.size, inv.slot.y * inv.slot.size + inv.lcy, inv.slot.size do
+            
+            for x = inv.lcx + inv.slot.size, inv.lcx + inv.slot.x * inv.slot.size, inv.slot.size do
+                
+                love.graphics.setColor(0,0,0, 1)
+                love.graphics.rectangle("fill", x, y, inv.slot.size, inv.slot.size)
+                
+                love.graphics.setColor(1,1,1, 1)
+                love.graphics.rectangle("fill", x + pad1, y + pad1, pad2, pad2)
+            end
             
         end
+     --   love.graphics.setColor(rgb(25, 25, 25))
+  --      love.graphics.rectangle("fill", screen.pa.w * 0.15 + 4, screen.pa.h * 0.15 + 3, screen.pa.w * 0.7, screen.pa.h * 0.7)
         
     end
+    
 end
 
 -- ==================== Touch handlers (joystick) =========
@@ -198,7 +262,7 @@ function love.touchreleased(id)
 end
 function love.keypressed(key)
     if key == "f3" then
-        f3 = not f3
+        const.f3 = not const.f3
         --[[if f3 then
             f3 = true
         else

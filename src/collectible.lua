@@ -60,7 +60,7 @@ function collectible.collect(self, player)
             table.remove(self.spawned, i)
             
             self.occupied[c.x] = self.occupied[c.x] or {}
-            self.occupied[c.x][c.y] = false
+            self.occupied[math.floor(c.x/ const.cell_size)][math.floor(c.y / const.cell_size)] = false
         end
     end
 end

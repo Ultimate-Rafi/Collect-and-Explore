@@ -13,8 +13,10 @@ local const = {
     cell_size = 20,          -- pixels per cell
     rng_offset = 8, -- accuracy to _ digits after decimal point
     spawn_boost = 90,
-    f3 = true
+    f3 = true,
+    inv = true
 }
+
 const.rng_offset = 10 ^ const.rng_offset
 
 screen.init = function()
