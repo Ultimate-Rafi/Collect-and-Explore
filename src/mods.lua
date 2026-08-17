@@ -3,7 +3,7 @@
 local mods = {
     list = {}
 }
-mods.list["vanilla"], err = love.filesystem.load("mods/vanilla.lua")
+mods.list["vanilla"], err = love.filesystem.load("mods/vanilla.lms")
 if not mods.list.vanilla then
     error("Couldnt load vanilla"..tostring(err))
 end
