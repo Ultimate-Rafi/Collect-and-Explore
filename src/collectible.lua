@@ -51,16 +51,21 @@ function collectible.spawn(self, dt, player)
     --return tostring(mult.d), ""
 end
 
-function collectible.collect(self, player)
+function collectible.collect(self, player, inventory)
     for i = #self.spawned, 1, -1 do
         c = self.spawned[i]
         cdata = self.types.name[c.name]
         if math.sqrt((player.x - c.x)^2 + (player.y - c.y)^2) <= (player.rad + self.types.name[c.name].size) then
-            player.inventory[cdata.inv_slot] = (player.inventory[cdata.inv_slot] or 0) + cdata.value
-            table.remove(self.spawned, i)
             
-            self.occupied[c.x] = self.occupied[c.x] or {}
-            self.occupied[math.floor(c.x/ const.cell_size)][math.floor(c.y / const.cell_size)] = false
+            player.inventory[cdata.inv_slot] = (player.inventory[cdata.inv_slot] or 0) + cdata.value
+            
+            if inventory:add("vanilla:main_inventory", c.name, cdata.value, cdata.max) then
+                
+                table.remove(self.spawned, i)
+                
+                self.occupied[c.x] = self.occupied[c.x] or {}
+                self.occupied[math.floor(c.x/ const.cell_size)][math.floor(c.y / const.cell_size)] = false
+            end
         end
     end
 end

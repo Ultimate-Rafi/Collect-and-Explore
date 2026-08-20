@@ -12,7 +12,7 @@ return function(game)
     end
     
     -- Game objects
-    api.new.collectible = function(data_or_name, texture, color, size, chance, inv_slot, value, mults)
+    api.new.collectible = function(data_or_name, texture, color, size, chance, inv_slot, value, max, mults)
         --[[local c = data_or_name
         local d = game.default.collectible
         if type(c) == "string" then
@@ -47,6 +47,7 @@ return function(game)
         c.mults = c.mults or {}
         c.size = c.size or 0
         c.color = c.color or colors.undefined
+        c.max = c.max or 0
         
         if type(c.color) == "string" then
             c.color = colors[c.color]
@@ -57,7 +58,7 @@ return function(game)
     end
     
     -- UI objects
-    api.new.button = function(id_or_data, x, y, width, height, txt, idle, tap, hold, act_i, act_t, act_h)
+    api.new.button = function(id_or_data, x, y, width, height, txt, idle, tap, hold, act_i, act_t, act_h, act_r)
         local b = id_or_data
         if type(b) == "string" then
             b = {
@@ -73,12 +74,14 @@ return function(game)
                 act_i = act_i, -- add params for 3 acts, fix and cooldowns
                 act_h = act_h,
                 act_t = act_t,
-                attributes = {}
+                act_r = act_r
             }
         end
+        b.attributes = b.attributes or {}
         b.id = b.id or b.name
         b.name = b.name or b.id
         game.button.list[b.id or (#game.button.list + 1)] = b
+        game.button.untouch[b.id or (#game.button.list)] = true
     end
     
     -- Inventory
@@ -106,14 +109,15 @@ return function(game)
         for y = 1, sloty do
             inv.slots[y] = {}
             for x = 1, slotx do
-                inv.slots[y][x] = {
-                    item = "",
-                    amount = 0,
-                    max = 0 -- maximum stack size
-                }
+                inv.slots[y][x] = {}
+                    --item = "",
+                    --amount = 0,
+                    --max = 0 -- maximum stack size
+               -- }
             end
         end
         
+        inv.selected = {}
         
         game.inventory.list[id] = inv
     end
@@ -151,6 +155,10 @@ return function(game)
     
     api.get.f3 = function()
         return game.const.f3
+    end
+    
+    api.get.dt = function()
+        return game.vars.dt
     end
     
     api.get.inv = function()
@@ -226,7 +234,14 @@ return function(game)
         game.collectible.max = num or 30
     end
     
+    api.set.player = {}
     
+    api.set.player.max_speed = function(num)
+        game.player.speed = num or 0
+    end
+    api.set.player.min_speed = function(num)
+        game.player.minspeed = num or 0
+    end
     
     
     -- Special APIs
@@ -249,6 +264,16 @@ return function(game)
         game.inventory.opened = {}
         game.inventory.is_opened = false
     end
+    
+    api.draw = {}
+    
+    api.draw.txt = function(id, txt)
+        game.draw.txt[id] = txt or ""
+    end
+    
+    
+    
+    
     
     return api
 end

@@ -15,6 +15,13 @@ local menu = require("menu")
 local api = require("api")
 local mods = require("mods")
 
+local draw = {
+    txt = {}
+}
+
+vars = {
+    dt = 0
+}
 
 -- ==================== Scoring & Save ===================
 
@@ -44,7 +51,9 @@ function love.load()
         button = button,
         menu = menu,
         player = player,
-        inventory = inventory
+        inventory = inventory,
+        draw = draw,
+        vars = vars
     }
     
     api = api(game)
@@ -67,6 +76,8 @@ end
 
 function love.update(dt)
     
+    vars.dt = dt
+    
     if menu.current.joystick then
         -- Keyboard input (if no touch active)
         if joystick.touch_id == nil then
@@ -84,7 +95,7 @@ function love.update(dt)
     if menu.current.collectible then
         -- Spawn coins
         collectible:spawn(dt, player)
-        collectible:collect(player)
+        collectible:collect(player, inventory)
     end
     
     
@@ -102,13 +113,21 @@ function love.update(dt)
     --assert(menu.current.buttons, table.concat(menu.current, "\n"))
     --for name, untouch in pairs(button.untouch) do
     
-    for name, bool in pairs(menu.current.buttons) do
+    for name in pairs(menu.current.buttons) do
         local butt = button.list[name]
-        if button.untouch[name] and butt.act_i then
-            butt.act_i(butt.attributes)
+        if button.untouch[name] then
+            if butt.act_i then
+                butt.act_i(butt.attributes)
+                --button.untouch[name] = false
+            end
+        else
+            if butt.act_h then
+                butt.act_h(butt.attributes)
+            end
         end
     end
 end
+
 
 function love.draw()
     local line = 0
@@ -152,7 +171,7 @@ function love.draw()
     
     -- Buttons
     for name in pairs(menu.current.buttons) do
-        assert(name, "nope its not it")
+        --assert(name, "nope its not it")
         local butt = button.list[name]
         
         --error(butt, butt.id, butt.x, butt.y, butt.width, butt.height)
@@ -172,7 +191,15 @@ function love.draw()
     if const.f3 and menu.current.hud then
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.print(string.format("XY: %d, %d \nFPS: %d \nCoins: %d", math.floor(player.x/20 + 0.5), math.floor(player.y/20 + 0.5), fps, #collectible.spawned), 10, line * font_size + 10)
-        line = line + 4
+        line = line + 3
+        
+        for _, txt in pairs(draw.txt) do
+            love.graphics.print(txt, 10, 10 + line * font_size)
+            line = line + 1
+        end
+        --draw.txt = {}
+        
+        line = line + 1
         
         for _, name in ipairs(player.inv_order) do
             count = player.inventory[name]
@@ -205,23 +232,48 @@ function love.draw()
         end]]
         local inv = inventory.opened
         local pad1 = 0.1
+        local pad3 = 0.64
         
         
         local pad2 = (1 - 2 * pad1) * inv.slot.size
         pad1 = inv.slot.size * pad1
         
+        -- slots
         for y = inv.lcy + inv.slot.size, inv.slot.y * inv.slot.size + inv.lcy, inv.slot.size do
-            
             for x = inv.lcx + inv.slot.size, inv.lcx + inv.slot.x * inv.slot.size, inv.slot.size do
                 
-                love.graphics.setColor(0,0,0, 1)
+                if inv.selected and inv.selected.x == math.floor((x - inv.lcx) / inv.slot.size) and inv.selected.y == math.floor((y - inv.lcy) / inv.slot.size)then
+                    love.graphics.setColor(1, 1, 1, 1) -- highlight for selected slot
+                else
+                    love.graphics.setColor(0,0,0, 1)
+                end
                 love.graphics.rectangle("fill", x, y, inv.slot.size, inv.slot.size)
                 
-                love.graphics.setColor(1,1,1, 1)
+                love.graphics.setColor(rgb(100,100,100,1))
                 love.graphics.rectangle("fill", x + pad1, y + pad1, pad2, pad2)
+                
+                local slot = inv.slots[(y - inv.lcy) / inv.slot.size][(x - inv.lcx) / inv.slot.size]
+                if slot.item then
+                    love.graphics.setColor(collectible.types.name[slot.item].color)
+                    
+                    if inv.selected and inv.selected.x == math.floor((x - inv.lcx) / inv.slot.size) and inv.selected.y == math.floor((y - inv.lcy) / inv.slot.size)then
+                        love.graphics.circle("fill", x + inv.slot.size / 2, y + inv.slot.size / 2, collectible.types.name[slot.item].size + const.cell_size * 0.1)
+                    else
+                        love.graphics.circle("fill", x + inv.slot.size / 2, y + inv.slot.size / 2, collectible.types.name[slot.item].size)
+                    end
+                    
+                    love.graphics.setColor(1,1,1,1)
+                    love.graphics.print(slot.count, x + inv.slot.size * pad3, y + inv.slot.size * pad3)
+                end
             end
-            
         end
+        --[[ selected slot
+        if inv.selected then
+            
+            love.graphics.setColor(collectible.types.name[slot.item].color)
+            love.graphics.circle("fill", inv.selected.x + inv.slot.size / 2, inv.selected.y + inv.slot.size / 2, collectible.types.name[slot.item].size + 0.1 * const.cell_size)
+        end]]
+        
      --   love.graphics.setColor(rgb(25, 25, 25))
   --      love.graphics.rectangle("fill", screen.pa.w * 0.15 + 4, screen.pa.h * 0.15 + 3, screen.pa.w * 0.7, screen.pa.h * 0.7)
         
@@ -236,8 +288,8 @@ function love.touchpressed(id, x, y)
     if math.sqrt(dx*dx + dy*dy) < joystick.radius * 1.5 and menu.current.joystick then
         joystick.touch_id = id
         update_joystick(x, y)
+    elseif button:set_touch(id, x, y, menu.current.buttons) then
     end
-    button:set_touch(id, x, y, menu.current.buttons)
 end
 
 function love.touchmoved(id, x, y)
@@ -245,9 +297,11 @@ function love.touchmoved(id, x, y)
         update_joystick(x, y)
     end
     local name = button.touch[id]
-    if name and button.list[name].act_h and menu.current.buttons[name] then
-        button.list[name]:act_h()
-    end
+    
+    --if name and button.list[name].act_h and menu.current.buttons[name] then
+        --button.list[name]:act_h(button.list[name].attributes)
+  --  end
+
 end
 
 function love.touchreleased(id)
@@ -256,8 +310,7 @@ function love.touchreleased(id)
         joystick.x, joystick.y = 0, 0
         joystick.knob_x, joystick.knob_y = joystick.base_x, joystick.base_y
     elseif button.touch[id] then
-        button.untouch[button.touch[id]] = true
-        button.touch[id] = nil
+        button:set_release(id)
     end
 end
 function love.keypressed(key)
