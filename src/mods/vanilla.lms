@@ -2,7 +2,8 @@
 api.set.default("collectible", {
     size = api.get.cell_size() * 0.4,
     mults = {},
-    value = 1
+    value = 1,
+    max = 32
 })
 
 
@@ -87,7 +88,7 @@ api.new.button({
     txt = "inv",
     act_t = function()
         --api.set.inv(not api.get.inv())
-
+        
         api.inv.open("vanilla:main_inventory")
         api.set.menu("inventory")
     end
@@ -107,13 +108,63 @@ api.new.button({
     end
 })
 
+api.new.button({
+    name = "sprint",
+    id = "vanilla:sprint",
+    x = api.get.screen.width() * 0.75,
+    y = api.get.screen.height() * 0.5,
+    height = 60,
+    width = 60,
+    txt = ">>",
+    attributes = {
+        mana = 100,
+    },
+    act_t = function(attribs)
+        --local mana = attribs.mana
+        --if attribs.mana and attribs.mana > 0 then
+        api.set.player.max_speed(400)
+        api.set.player.min_speed(120)
+        --end
+        --api.draw.txt("mana", "Mana: "..(attribs.mana or -1))
+    end,
+    act_h = function(attribs)
+        if attribs.mana and attribs.mana > 0 then
+            api.set.player.max_speed(500)
+            api.set.player.min_speed(150)
+            attribs.mana = math.max(0, attribs.mana - 10 * api.get.dt())
+        else
+            api.set.player.max_speed(250)
+            api.set.player.min_speed(50)
+            --attribs.mana = math.min(100, attribs.mana + 3)
+        end
+        
+        api.draw.txt("mana", "Mana: " .. math.floor(attribs.mana))
+    end,
+    act_i = function(attribs)
+        
+        --if attribs.mana and attribs.mana < 98 then
+    --        attribs.mana = (attribs.mana or 0) + 3
+--        end
+        
+        attribs.mana = math.min(100, attribs.mana + 4 * api.get.dt())
+        api.draw.txt("mana", "Mana: ".. math.floor(attribs.mana))
+    end,
+    act_r = function(attribs)
+        api.set.player.max_speed(250)
+        api.set.player.min_speed(50)
+        
+        --api.draw.txt("mana", "Mana: "..(attribs.mana or -1))
+    end
+})
+
 -- Menus
 
 api.new.menu("game",
     {"world", "player", "joystick", "hud", "inventory", "collectible"},
     {
         "vanilla:f3",
-        "vanilla:inventory_open"
+        "vanilla:inventory_open",
+        "vanilla:sprint"
     }
 )
 
@@ -128,4 +179,5 @@ api.new.menu("inventory",
 api.set.menu("game")
 
 api.new.inventory("player", "vanilla:main_inventory", 9, 3, 50)
+
 
